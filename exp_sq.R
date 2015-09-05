@@ -8,10 +8,12 @@ library(rgeos)
 library(rgdal)
 library(sp)
 
+
 #ορισμός περιοχής μελέτης μέσα από τη δημιουργία bounding box. Αφού δημιουργηθεί το bounding box 
 #γίνεται αποθήκευση στο directory που ορίσθηκε αρχικά και έπειτα εισάγεται στο Rstudio.
 area=readShapeSpatial("bbox2.shp")
 plot(area)
+
 #πρώτο βήμα είναι ο ορισμός του προβολικού συστήματος. Στη συγκεκριμένη περίπτωση χρησιμοποιείται
 #το WGS84. Αφού ορισθεί το προβολικό γίνεται απεικονίζεται η περιοχή μελέτης.
 proj4string(area) = CRS("+proj=longlat +datum=WGS84 +no_defs")
@@ -23,6 +25,7 @@ pointcenter = gCentroid(area,byid=FALSE)
 proj4string(pointcenter) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 plot(pointcenter)
 plot(area,add=T)
+
 #ορισμός των συντεταγμένων του κεντροειδούς (του σημείου έναρξης)
 x_first=26.3
 y_first=39.1
@@ -33,11 +36,15 @@ y_first=39.1
 leg_list = list()
 n=10
 initial_step=0.03
+
+
 #χρήση του πακέτου TurtleGraphics για την εκτέλεση του μοτίβου.Ορισμός των διαστάσεων του bounding box
 #όπου θα κινηθεί το turtle. σε περιπτώσεις όπου το μοτίβο ξεπερνά τα όρια του bounding box,θα περιορίζεται 
 #(θα κόβεται) αυτόματα στα όρια αυτού.Εγκατάσταση του turtle στο σημείο έναρξης βάση συντεταγμένων. 
 turtle_init(width=0.173,height=0.211, mode = c("clip"))
 turtle_setpos(x_first,y_first)
+
+
 #για τη δημιουργία των legs αρχικά γίνεται έλεγχος για να βρεθεί το leg στο οποίο βρίσκεται το UAV. 
 #Εάν βρίσκεται στο πρώτο τότε ως αρχή ορίζεται το σημείο με συντεταγμένες αυτές του κεντροειδούς και 
 #μήκος το αρχικό step(0.03 μοίρες). Σε κάθε άλλη περίπτωση ως αρχικό σημείο του leg ορίζεται το τελικό 
