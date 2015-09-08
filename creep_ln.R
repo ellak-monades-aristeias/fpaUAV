@@ -55,3 +55,68 @@ initial_step=0.03
 
 turtle_init(width=0.173,height=0.211, mode = c("clip"))
 turtle_setpos(x_first,y_first)
+
+#' 
+for (i in 1:n){
+  
+  if (i ==1){
+    x_start = x_first
+    y_start = y_first
+    step = initial_step
+  }else{
+    x_start = x_end 
+    y_start = y_end 
+  }
+  
+  if(i%%2 == 0){
+    
+    step = initial_step + 0.15
+    
+  } else{
+    step=initial_step
+  }
+  if(i==1||i==2||i==5||i==6||i==9||i==10){
+    turtle_right(angle=90)
+    turtle_forward(dist=step)
+  }else{
+    turtle_left(angle=90)
+    turtle_forward(dist=step)
+  }
+  
+  
+  
+  
+  y_end=turtle_getpos()[[2]]
+  x_end=turtle_getpos()[[1]]
+  leglist[[i]]=c(y_start,x_start, y_end,x_end)
+  
+  
+}
+
+
+cr_range = range(unlist(leglist))
+plot(0, 0, type = "n", xlab="x", ylab="y", ylim=cr_range, xlim=cr_range)
+for (k in 1:n){
+  leg=leglist[[k]]
+  points(leg[1],leg[2], type="p", pch=16)
+  segments(leg[1],leg[2],leg[3],leg[4], col=sample(rainbow(40)), lwd=2  )
+}
+points(leg[3],leg[4], type="p", pch=23, col="red")
+#
+creepingdf = data.frame(matrix(unlist(leglist), ncol=4, byrow=T))
+names(creepingdf)=c("y_from", "x_from", "y_to", "x_to")
+
+#
+lines = vector("list", nrow(creepingdf))
+library(sp)
+for (i in seq_along(lines)) {
+  lines[[i]] <- Lines(list(Line(rbind(c(creepingdf$x_from[i],creepingdf$y_from[i]),  c(creepingdf$x_to[i], creepingdf$y_to[i]) ))), as.character(i))
+}
+
+# 
+linessp = SpatialLines(lines)
+proj4string(linessp) = CRS("+proj=longlat +datum=WGS84 +no_defs")
+
+#
+creepingSLDF = SpatialLinesDataFrame(linessp,creepingdf)
+proj4string(creepingSLDF) = CRS("+proj=longlat +datum=WGS84 +no_defs")
