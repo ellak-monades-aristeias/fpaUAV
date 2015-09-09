@@ -56,7 +56,14 @@ initial_step=0.03
 turtle_init(width=0.173,height=0.211, mode = c("clip"))
 turtle_setpos(x_first,y_first)
 
-#' 
+#' Ορισμός των χαρακτηριστικών του μοτίβου και δημιουργία αυτού μέσω loop. Ο χρήστης αρχικά ορίζει το σημείο έναρξης
+#' πτήσης ως το σημείο από όπου θα ξεκινήσει το πρώτο ευθύγραμμο τμήμα(leg). Εφόσον βάση του μοτίβου τα παράλληλα 
+#' ευθύγραμμα τμήματα χαρακτηρίζονται από ίδιο μήκος, ορίζεται πως τα legs με ζυγό αριθμό θα έχουν αυξημένο μήκος 
+#' κατά 0.15 μοίρες από το αρχικό βήμα. τα υπόλοιπα legs θα έχουν μήκος 0.03 μοίρες όπως αρχικά είχε ορισθεί. Εκτός 
+#' από το μήκος των ευθύγραμμων τμημάτων, ορίζονται και τα χαρακτηριστικά της πτήσης. Κάθε τέσσερα ευθύγραμμα τμήματα
+#' για δύο legs η μη επανδρωμένη πλατφόρμα θα εκτελεί στροφές των 90 μοιρών δεξιά. Οι στροφές για όλα τα υπόλοιπα 
+#' legs θα είναι 90 μοίρες προς τα αριστερά. Για κάθε κόμβο των ευθύγραμμων τμημάτων θα αποθηκεύονται οι συντεταγμένες.
+
 for (i in 1:n){
   
   if (i ==1){
@@ -88,35 +95,45 @@ for (i in 1:n){
   
   y_end=turtle_getpos()[[2]]
   x_end=turtle_getpos()[[1]]
-  leglist[[i]]=c(y_start,x_start, y_end,x_end)
+  leg_list[[i]]=c(y_start,x_start, y_end,x_end)
   
   
 }
 
+#' Άνοιγμα της λίστας με τις συντεταγμένες των ευθύγραμμων τμημάτων βάση του εύρους αυτών. Ορισμός των χαρακτηριστικών 
+#' των legs (μέγεθος, χρώμα) και απεικόνιση αυτών.
 
-cr_range = range(unlist(leglist))
+cr_range = range(unlist(leg_list))
 plot(0, 0, type = "n", xlab="x", ylab="y", ylim=cr_range, xlim=cr_range)
 for (k in 1:n){
-  leg=leglist[[k]]
+  leg=leg_list[[k]]
   points(leg[1],leg[2], type="p", pch=16)
   segments(leg[1],leg[2],leg[3],leg[4], col=sample(rainbow(40)), lwd=2  )
 }
 points(leg[3],leg[4], type="p", pch=23, col="red")
-#
-creepingdf = data.frame(matrix(unlist(leglist), ncol=4, byrow=T))
+
+#' Δημιουργία data.frame με τις συντεταγμένες των ευθύγραμμων τμημάτων. Ορισμός labels για τις στήλες.
+
+creepingdf = data.frame(matrix(unlist(leg_list), ncol=4, byrow=T))
 names(creepingdf)=c("y_from", "x_from", "y_to", "x_to")
 
-#
+#' Δημιουργία γραμμών μέσα από το data.frame με τις συντεταγμένες που δημιουργήθηκε. 
+
 lines = vector("list", nrow(creepingdf))
 library(sp)
 for (i in seq_along(lines)) {
   lines[[i]] <- Lines(list(Line(rbind(c(creepingdf$x_from[i],creepingdf$y_from[i]),  c(creepingdf$x_to[i], creepingdf$y_to[i]) ))), as.character(i))
 }
 
-# 
+#' Μετατροπή των γραμμών σε simple SpatialLines και ορισμός προβολικού συστήματος. 
+
 linessp = SpatialLines(lines)
 proj4string(linessp) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 
-#
+#' Μετατροπή από simple SpatialLines σε  SpatialLinesDataFrame με στόχο την μετέπειτα αποθήκευση του μοτίβου.
+#' Ορισμός προβολικού συστήματος. Απεικόνιση του μοτίβου. 
+
 creepingSLDF = SpatialLinesDataFrame(linessp,creepingdf)
 proj4string(creepingSLDF) = CRS("+proj=longlat +datum=WGS84 +no_defs")
+plot(creepingSLDF)
+
