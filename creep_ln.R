@@ -2,12 +2,10 @@
 #' ===
 
 #' Ορισμός χώρου εργασίας (directory)
-
-setwd("C:/cba_drones")
+#setwd("C:/cba_drones")
 
 #' Φόρτωση όλων των βιβλιοθηκών που θα χρειασθούν για την ανάπτυξη του μοτίβου
-
-library("TurtleGraphics")
+library(TurtleGraphics)
 library(maptools)
 library(rgeos)
 library(rgdal)
@@ -16,21 +14,18 @@ library(rgdal)
 #' Στη συγκεκριμένη περίπτωση το αρχείο βρίσκεται σε μορφή kml. Ο ορισμός του προβολικού δεν είναι αναγκαίος σε αυτή 
 #' την περίπτωση όμως γίνεται ώς παράδειγμα στον εκάστοτε χρήστη που θα διαχειρίζεται άλλη μορφή αρχείων (π.χ shp.).
 #' Προβολή της περιοχής μελέτης (bounding box). 
-
-area=readOGR("bbox.kml",layer="bbox")
+area=readOGR("Data/bbox.kml",layer="bbox")
 proj4string(area) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 plot(area)
 
 #' Στο πρώτο στάδιο της ανάλυσης είναι χρήσιμο ο εκάστοτε χρήστης να γνωρίσει το μοτίβο που πρόκειται να αναπτύξει.
 #' Για να γίνει πιο εύκολη η κατανόηση του μοτίβου προτείνεται η παρουσίαση ενός παραδείγματος αυτού. 
-
 browseURL("http://www.navdynamic.com.au/p_navigator-search-rescue-parallel.html")
 
 
 #' Σύμφωνα με το μοτίβο, το σημείο έναρξης πτήσης της μη επανδρωμένης πλατφόρμας βρίσκεται στα όρια της περιοχής
 #' μελέτης. Για το λόγο αυτό ο χρήστης ορίζει τις συντεταγμένες του σημείου έναρξης πτήσης καθώς και το προβο-
 #' λικό σύστημα. Έπειτα γίνεται απεικόνιση του σημείου στην περιοχή ενδιαφέροντος.
-
 point_start=SpatialPoints(cbind(26.24,39.24))
 proj4string(point_start) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 plot(point_start)
@@ -44,7 +39,6 @@ y_first=39.24
 #' σε ευτο ευθύγραμμα τμήματα. Αυτό σημαίνει οι τιμές του μήκους των ευθύγραμμων τμημάτων είναι συνήθως δύο διαφορετικές
 #' και εναλλάσσονται νά ευθύγραμμο τμήμα. Σε αυτό το παράδειγμα το πλήθος των ευθύγραμμων τμημάτων ορίσθηκε στα 8
 #' και το αρχικό μήκος (βήμα), στις 0.03 μοίρες(η μονάδα εξαρτάρται από το προβολικό σύστημα)
-
 leg_list = list()
 n=8
 initial_step=0.03
@@ -52,7 +46,6 @@ initial_step=0.03
 #' Ορισμός χαρακτηριστικών του bounding box. Δηλώνονται το μήκος και το πλάτος αυτού, ενώ σε περίπτωση που το μοτίβο 
 #' βγαίνει εκτός ορίων περιοχής μελέτης (με το mode) θα γίνεται αυτόματα η κοπή αυτού στα όρια του bounding box.
 #' Ορισμός θέσης του turtle στο σημείο έναρξης πτήσης.
-
 turtle_init(width=0.173,height=0.211, mode = c("clip"))
 turtle_setpos(x_first,y_first)
 
@@ -63,7 +56,6 @@ turtle_setpos(x_first,y_first)
 #' από το μήκος των ευθύγραμμων τμημάτων, ορίζονται και τα χαρακτηριστικά της πτήσης. Κάθε τέσσερα ευθύγραμμα τμήματα
 #' για δύο legs η μη επανδρωμένη πλατφόρμα θα εκτελεί στροφές των 90 μοιρών δεξιά. Οι στροφές για όλα τα υπόλοιπα 
 #' legs θα είναι 90 μοίρες προς τα αριστερά. Για κάθε κόμβο των ευθύγραμμων τμημάτων θα αποθηκεύονται οι συντεταγμένες.
-
 for (i in 1:n){
   
   if (i ==1){
@@ -90,9 +82,6 @@ for (i in 1:n){
     turtle_forward(dist=step)
   }
   
-  
-  
-  
   y_end=turtle_getpos()[[2]]
   x_end=turtle_getpos()[[1]]
   leg_list[[i]]=c(y_start,x_start, y_end,x_end)
@@ -102,7 +91,6 @@ for (i in 1:n){
 
 #' Άνοιγμα της λίστας με τις συντεταγμένες των ευθύγραμμων τμημάτων βάση του εύρους αυτών. Ορισμός των χαρακτηριστικών 
 #' των legs (μέγεθος, χρώμα) και απεικόνιση αυτών.
-
 cr_range = range(unlist(leg_list))
 plot(0, 0, type = "n", xlab="x", ylab="y", ylim=cr_range, xlim=cr_range)
 for (k in 1:n){
@@ -113,12 +101,10 @@ for (k in 1:n){
 points(leg[3],leg[4], type="p", pch=23, col="red")
 
 #' Δημιουργία data.frame με τις συντεταγμένες των ευθύγραμμων τμημάτων. Ορισμός labels για τις στήλες.
-
 creepingdf = data.frame(matrix(unlist(leg_list), ncol=4, byrow=T))
 names(creepingdf)=c("y_from", "x_from", "y_to", "x_to")
 
 #' Δημιουργία γραμμών μέσα από το data.frame με τις συντεταγμένες που δημιουργήθηκε. 
-
 lines = vector("list", nrow(creepingdf))
 library(sp)
 for (i in seq_along(lines)) {
@@ -126,13 +112,11 @@ for (i in seq_along(lines)) {
 }
 
 #' Μετατροπή των γραμμών σε simple SpatialLines και ορισμός προβολικού συστήματος. 
-
 linessp = SpatialLines(lines)
 proj4string(linessp) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 
 #' Μετατροπή από simple SpatialLines σε  SpatialLinesDataFrame με στόχο την μετέπειτα αποθήκευση του μοτίβου.
 #' Ορισμός προβολικού συστήματος. Απεικόνιση του μοτίβου. 
-
 creepingSLDF = SpatialLinesDataFrame(linessp,creepingdf)
 proj4string(creepingSLDF) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 plot(creepingSLDF)
