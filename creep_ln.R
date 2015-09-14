@@ -96,15 +96,13 @@ for (i in 1:n){
 }
 
 #' Άνοιγμα της λίστας με τις συντεταγμένες των ευθύγραμμων τμημάτων βάση του εύρους αυτών. Ορισμός των χαρακτηριστικών 
-#' των legs (μέγεθος, χρώμα) και απεικόνιση αυτών.
+#' των legs και απεικόνιση αυτών.
 cr_range = range(unlist(leg_list))
-plot(0, 0, type = "n", xlab="x", ylab="y", ylim=cr_range, xlim=cr_range)
+
 for (k in 1:n){
   leg=leg_list[[k]]
-  points(leg[1],leg[2], type="p", pch=16)
-  segments(leg[1],leg[2],leg[3],leg[4], col=sample(rainbow(40)), lwd=2  )
+  
 }
-points(leg[3],leg[4], type="p", pch=23, col="red")
 
 #' Δημιουργία data.frame με τις συντεταγμένες των ευθύγραμμων τμημάτων. Ορισμός labels για τις στήλες.
 creepingdf = data.frame(matrix(unlist(leg_list), ncol=4, byrow=T))
@@ -112,7 +110,6 @@ names(creepingdf)=c("y_from", "x_from", "y_to", "x_to")
 
 #' Δημιουργία γραμμών μέσα από το data.frame με τις συντεταγμένες που δημιουργήθηκε. 
 lines = vector("list", nrow(creepingdf))
-library(sp)
 for (i in seq_along(lines)) {
   lines[[i]] <- Lines(list(Line(rbind(c(creepingdf$x_from[i],creepingdf$y_from[i]),  c(creepingdf$x_to[i], creepingdf$y_to[i]) ))), as.character(i))
 }
@@ -126,4 +123,8 @@ proj4string(linessp) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 creepingSLDF = SpatialLinesDataFrame(linessp,creepingdf)
 proj4string(creepingSLDF) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 plot(creepingSLDF)
+
+#' Αποθήκευση του μοτίβου σε Shapefile
+writeOGR(creepingSLDF, "path",layer="creeping line", driver="ESRI Shapefile", overwrite_layer = T)
+
 
