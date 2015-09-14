@@ -16,7 +16,7 @@ library(sp)
 #' Ορισμός περιοχής μελέτης μέσα από τη δημιουργία bounding box. Αφού δημιουργηθεί το bounding box 
 #' γίνεται αποθήκευση στο directory που ορίσθηκε αρχικά και έπειτα εισάγεται στο Rstudio. Το bounding box είναι σε 
 #' μορφή kml ώστε να είναι εύκολη η χρήση του. 
-area=readOGR("Data/bbox.kml",layer="bbox")
+area=readOGR("Data/bbox.kml",layer="bbox") 
 #plot(area)
 
 #' πρώτο βήμα είναι ο ορισμός του προβολικού συστήματος. Στη συγκεκριμένη περίπτωση χρησιμοποιείται
@@ -46,8 +46,8 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   plot(area,add=T)
   
   #' Oρισμός των συντεταγμένων του κεντροειδούς (του σημείου έναρξης)
-  x_first=26.3
-  y_first=39.1
+  x_first=26.32701
+  y_first=39.14581
   
   #' δημιουργία κενής λίστας όπου σε επόμενο στάδιο θα αποθηκευθούν τα ευθύγραμμα τμήματα που θα ακολουθήσει
   #' το uav (τα legs). Σε αυτή την περίπτωση ο αριθμός των legs που επιλέχθηκαν να δημιουργηθούν είναι n=10.
@@ -90,7 +90,7 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
     #' του μήκους ανά δύο legs σχετίζεται με το αρχικό βήμα που ορίζει ο χρήστης. Ουσιατικά ανά δύο ευθύγραμμα τμήματα το 
     #' μήκος αυξάνει κατά το αρχικό βήμα. 
     if(i%%2 == 1){
-      step =   step + 5
+      step =   step + 0.03
     } 
     
     turtle_forward(dist=step)
@@ -106,13 +106,12 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   #' δημιουργία γραμμών του μοτίβου. Ορισμός χαρακτηριστικών των αξόνων x-y καθώς και των σημείων γραμμών που θα 
   #' αναπαρασταθούν. 
   range_exp = range(unlist(leg_list))
-  #plot(0, 0, type = "n", xlab="x", ylab="y", ylim=range_exp, xlim=range_exp)
+  
   for (k in 1:n){
     leg=leg_list[[k]]
-    #points(leg[1],leg[2], type="p", pch=16)
-    #segments(leg[1],leg[2],leg[3],leg[4], col=sample(rainbow(40)), lwd=2  )
+    
   }
-  #points(leg[3],leg[4], type="p", pch=23, col="red")
+  
   
   #' Δημιουργία data.frame με τις συντεταγμένες των legs. Ορισμός στηλών και labels αυτών. 
   linesdf = data.frame(matrix(unlist(leg_list), ncol=4, byrow=T))
@@ -120,7 +119,6 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   
   #' Δημιουργία γραμμών των legs μέσα από το data.frame που δημιουργήθηκε.
   lines = vector("list", nrow(linesdf))
-  library(sp)
   for (i in seq_along(lines)) {
     lines[[i]] <- Lines(list(Line(rbind(c(linesdf$x_from[i],linesdf$y_from[i]),  c(linesdf$x_to[i], linesdf$y_to[i]) ))), as.character(i))
   }
