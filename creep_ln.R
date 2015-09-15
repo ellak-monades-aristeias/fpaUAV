@@ -3,7 +3,7 @@
 
 #' Ορισμός χώρου εργασίας (directory)
 #setwd("C:/cba_drones")
-
+ 
 #' Φόρτωση όλων των βιβλιοθηκών που θα χρειασθούν για την ανάπτυξη του μοτίβου
 library(TurtleGraphics)
 library(maptools)
