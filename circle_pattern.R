@@ -24,23 +24,51 @@ for (i in zones){
 }
 
 IDs <- sapply(buffers, function(x)slot(slot(x, "polygons")[[1]], "ID"))
+
 length(unique(IDs)) == length(buffers)
+
 spols <- SpatialPolygons(lapply(1:length(buffers), function(i) {
   Pols <- slot(buffers[[i]], "polygons")[[1]]
   slot(Pols, "ID") <- as.character(i)
   Pols
 }))
 
-IDsunique <- sapply(buffers, function(x) slot(slot(x, "polygons")[[1]], "ID"))
-length(unique(IDsunique)) == length(buffers)
+#toadd=1:20
+getEdges <- function(x) {
+  stopifnot(class(x) == "SpatialPolygons")
+  lapply(x@polygons, function(y) {
+    y@Polygons[[1]]@coords
+  })
+}
 
-Spols2 <- SpatialPolygons(lapply(buffers,function(x) slot(x, "polygons")[[1]]))
+#jim = Line(getEdges(buffers[[1]]))
+
+initialline = Line(getEdges(buffers[[1]]))
+initiallines = Lines(list(initialline), ID="1")
+
+list_of_lines=list()
+list_of_lines[[1]]=initiallines
+
+for (i in 2:20){
+  myl = Line(getEdges(buffers[[i]]))
+  mylines = Lines(list(myl), ID=as.character(i))
+  list_of_lines[[i]]=mylines
+}
+
+Sl = SpatialLines(list_of_lines)
+Sldf = SpatialLinesDataFrame(Sl, data.frame(Z = 1:20))
+
+
+
+#IDsunique <- sapply(buffers, function(x) slot(slot(x, "polygons")[[1]], "ID")="1821")
+#length(unique(IDsunique)) == length(buffers)
+#Spols2 <- SpatialPolygons(lapply(buffers,function(x) slot(x, "polygons")[[1]]))
 
 
 
 #polygons= lapply(buffers ,function(x) `@`(x ,"polygons"))
 #polygons_ind=lapply(unlist(polygons) , function(y) `@`(y,"Polygons"))
-#sppolobject=SpatialPolygons(list(Polygons(unlist(polygons_ind) ,ID = 1:20)))
+#sppolobject=SpatialPolygons(list(Polygons(unlist(polygons_ind) ,ID =1)))
 
 ##class(sppolobject)
 
