@@ -126,7 +126,7 @@ creepingSLDF = SpatialLinesDataFrame(linessp,creepingdf)
 proj4string(creepingSLDF) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 plot(creepingSLDF)
 
-#' Εισαγωγή του ψηφιακού μοντέλου εδάφους της περιοχής. Ο χρήστης ακολουθώντας τον παρακάτω σύνδεσμο θα
+#' Επιλογή του ψηφιακού μοντέλου εδάφους της περιοχής. Ο χρήστης ακολουθώντας τον παρακάτω σύνδεσμο θα
 #' πρέπει να επιλέξει την περιοχή ενδιαφέροντός του και να κατεβάσει/αποθηκεύσει το ψηφιακό μοντέλο εδάφους.
 browseURL("http://srtm.csi.cgiar.org/SELECTION/inputCoord.asp")
 
@@ -137,15 +137,15 @@ dem=raster("dem_lesvos.tif")
 plot(dem)
 str(dem)
 
-#' υπολογισμός του μήκους του μοτίβου ώστε ο χρήστης να μπορέσει στη συνέχεια να αποφασίσει το πλήθος
+#' Υπολογισμός του μήκους του μοτίβου ώστε ο χρήστης να μπορέσει στη συνέχεια να αποφασίσει το πλήθος
 #' των σημείων που θα πάρει. Τα σημεία για ένα καλύτερο αποτέλεσμα θα πρέπει να είναι regular. Αυτό σημαίνει
-#' πως θα υπάρχει ένα βήμα. Στο συγκεκιρμένο παράδειγμα δημιουργήθηκαν 500 σημεία. Ουσιαστικά τα σημεία
-#' δημιουργούνται με τη μέθοδο sample όπου κάθε σηεμείο "τρυπάει" τις γραμμές και παίρνει τις συντεταγμένες.
+#' πως θα υπάρχει ένα βήμα. Στο συγκεκιρμένο παράδειγμα δημιουργήθηκαν 200 σημεία. Ουσιαστικά τα σημεία
+#' δημιουργούνται με τη μέθοδο sample όπου κάθε σημείο "τρυπάει" τις γραμμές και παίρνει τις συντεταγμένες.
 gLength(creepingSLDF)
-waypts=spsample(creepingSLDF,500,type ="regular")
+waypts=spsample(creepingSLDF,200,type ="regular")
 
 #' Δημιουργία data.frame με τις τιμές του υψομέτρου για κάθε σημείο και με μηδενικό ύψος πτήσης z.Οι τιμές
-#' του υψομέτρου προέκυψαν από την εντολή extract  όπου για κάθε ένα από τα 500 σημεία αποθηκεύθηκε το υψόμετρο.
+#' του υψομέτρου προέκυψαν από την εντολή extract  όπου για κάθε ένα από τα 200 σημεία αποθηκεύθηκε το υψόμετρο.
 data=data.frame((extract(dem,waypts)),z=0)
 names(data) [1] ="dem_values"
 
@@ -159,6 +159,13 @@ waypoints=SpatialPointsDataFrame(waypts,data)
 #' μέτρα από το έδαφος. Όπου το ανάγλυφο είναι μέτριο (<=600μ), η μη επανδρωμένη πλατφόρμα θα πετά στα 60
 #' μέτρα από το έδαφος, ενώ σε κάθε άλλη περίπτωση θα πετά στα 100 μέτρα.
 waypoints@data$z <- ifelse(waypoints@data$dem_values<=200, waypoints@data$dem_values+40,ifelse(waypoints@data$dem_values>600,waypoints@data$dem_values+100,waypoints@data$dem_values+60))
+
+#' Απεικόνιση KLM των σημείων του μοτίβου μέσω του Google Earth
+plotKML(waypoints,colours="MAGNITUDE")
+
+
+
+
 
 #' Αποθήκευση του μοτίβου σε Shapefile
 writeOGR(creepingSLDF, "path",layer="creeping line", driver="ESRI Shapefile", overwrite_layer = T)
