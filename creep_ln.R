@@ -18,7 +18,7 @@ library(plotKML)
 #' Στη συγκεκριμένη περίπτωση το αρχείο βρίσκεται σε μορφή kml. Ο ορισμός του προβολικού δεν είναι αναγκαίος σε αυτή
 #' την περίπτωση όμως γίνεται ώς παράδειγμα στον εκάστοτε χρήστη που θα διαχειρίζεται άλλη μορφή αρχείων (π.χ shp.).
 #' Προβολή της περιοχής μελέτης (bounding box).
-area=readOGR("bbox.kml",layer="bbox")
+area=readOGR("Data\bbox.kml",layer="bbox")
 proj4string(area) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 plot(area)
 
