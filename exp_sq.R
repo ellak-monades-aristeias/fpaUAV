@@ -206,7 +206,7 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   #' είναι και η απεικόνιση της περιοχής κάλυψης ταυτόχρονα ώστε παράλλημε με το μοτίβο να φαίνεται και η περιοχή
   #' που θα καλυφθεί σε περίπτωση πτήσης. Τα σημεία που απεικονίζονται χρησιμοποιούνται τόσο για απλή απεικόνιση
   #' του μοτίβου, όσο και για τον ορισμό των περιοχών όπου το UAV θα τραβήξει φωτογραφίες.
-  plotKML(waypoints_creep,colour_scale="#FFFF00", "creeping_line")
+  plotKML(waypoints_creep,colour_scale="#FFFF00", "expanding_square")
 
 
   #' Αποθήκευση του SpatialLinesDataFrame σε shapefile.
