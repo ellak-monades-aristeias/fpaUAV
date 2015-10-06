@@ -2,7 +2,7 @@
 #' ===
 
 
-#' φόρτωση όλων των βιβλιοθηκών που θα χρειασθούν
+#' Loading libraries
 library(maptools)
 library(rgeos)
 library(rgdal)
@@ -10,64 +10,52 @@ library(sp)
 library(raster)
 library(plotKML)
 
+#' Create functions to open links. Through links users can see the characteristics of the pattern and get
+#' the Digital Elevation Model. Users must select the appropriate DEM and save it (to directory).
 meet_the_pattern<- function(){
-  #' Μία σημαντική πληροφορία που είναι απαραίτητη για το χρήστη πριν ξεκινήσει την ανάλυσή του είναι η γνωριμία
-  #' με το υπό ανάπτυξη μοτίβο. Ο παρακάτω σύνδεσμος προσφέρει τη δυνατότητα γνωριμίας με τα χαρακτηριστικά του
-  #' μοτίβου.
   browseURL("http://mathworld.wolfram.com/ConcentricCircles.html")
 }
 
 get_your_dem <- function(){
-  #' Επιλογή του ψηφιακού μοντέλου εδάφους της περιοχής ενδιαφέροντας. Ακολουθώντας τον σύνδεσμο ο εκάστοτε χρήστης
-  #' μπορεί να επιλέξει και να αποθηκεύση στον προσωπικό του χώρο το ψηφιακό μοντέλο εδάφους της περιοχής μελέτης.
   browseURL("http://srtm.csi.cgiar.org/SELECTION/inputCoord.asp")
 }
 
+#' Create function for Circle pattern
 circle_pattern<-function(zones=seq(0.006,0.03,0.006),toplot=T, toexport=T){
-  #' Δημιουργία χωρικού σημείου από όπου θα ξεκινησει η πτήση. Για το συγκεκριμένο μοτίβο ο χρήστης ορίζει το
-  #' σημείο έναρξης πτήσης. Το σημείο αυτό αποτελεί το κεντρικο σημείο όλων των κυκλων εφόσον όλοι οι κύκλοι που
-  #' θα δημιουργηθούν είναι ομόκεντροι (χαρακτηρίζονται από το ίδιο κέντρο).
-  #' Ορισμός εύρους τιμών για τις ζώνες που θα χρησιμοποιηθούν. Το πλήθος και το μέγεθος των χωρικών ζωνών που
-  #' χαρακτηρίζουν το μοτίβο επιλέγονται από το χρήστη. ο χρήστης ανάλογα με την εφαρμογή και το μέγεθος της
-  #' περιοχής ενδιαφέροντος ορίζει τόσο τον αριθμό των ζωνών που θα σημιουργηθούν όσο και το μέγεθος αυτών. Οι
-  #' ζώνες που δημιουργούνται είναι ουσιαστικά ομόκεντρα κυκλικά πολύγωνα. Λόγω του κυκλικού σχήματος το μέγεθος
-  #' αυτών καθορίζεται από το μέγεθος της ακτίνας των κύκλων. Κάθε κυκλος/κυκλικό πολύγωνο έχει μεγαλύτερη ακτίνα
-  #' από το προηγούμενο. Πρακτικά κάθε κυκλικό πολύγωνο εμπεριέχεται μέσα στα υπόλοιπα. Ο μεγαλύτερος κύκλος θα
-  #' περιέχει όλους τους υπόλοιπους. Στο συγκεκριμένο παράδειγμα θα δημιουργηθούν 5 ομόκεντρα κυκλικα πολύγωνα
-  #' (overlapping polygons) με αρχικό βήμα 0.006 μοίρες.
+  #' Create a start point for the pattern . For this pattern the user has to set the coordinate of the starting point.
+  #' The starting point will be the center point for all circles. In fact the user will create  concentric circles.
+  #' The concentrics circles will be the result of multiple buffers/spatial zones. The user has to set the number and the
+  #' size of zones(according to the use and the size of the area of interest). The size of the zones defined by the radius of
+  #' circles. The outer zones have bigger radius than the inside zones. For this example we will create 5 concentric
+  #' circles with initial radius/step 0.006 degrees. It is important to set the projection (WGS'84).
   point=SpatialPoints(cbind(26.32701,39.14581))
   proj4string(point) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 
-  #' Δημιουργία κενής λίστας για την μετέπειτα αποθήκευση των στοιχείων του μοτίβου. Ορισμός δείκτη/βήματος.
-  #' Ο δείκτης χρησιμοποιείται ώστε να δημιουργηθούν αυτόματα οι χωρικές ζώνες(5 ζώνες).
+  #' Create an empty list to store later our zones.
+  #' Create an index for our loop to automatically change the zone.
   buffers=list()
   index=1
 
-  #' Δημιουργία χωρικών ζωνών. Για τη δημιουργία τους ορίζονται το σημείο που έχει ήδη δημιουργηθεί,το επιθυμητό
-  #' από τον χρήστη πλήθος των ζωνών και το μέγεθος αυτών. Κάθε φορά που θα εκτελείται η δομή επανάληψης θα
-  #' δημιουργείται ένα κυκλικό πολύγωνο με κέντρο το σημείο που έσει δημιουργηθεί και αυξανόμενη ακτίνα ως προς
-  #' το αρχικό βήμα που ορίσθηκε από το χρήστη.
+  #' Create buffer zones. Set the number and size of zones according to initial step/radius. Every circle polygon
+  #' from  the loop will have the same center point (concentric spatial polygons).
   for (i in zones){
     buffers[index]=gBuffer(point,byid=TRUE, width=i)
     index=index+1
   }
 
-  #' Ορισμός των IDs των πολυγώνων της λίστας.Έλεγχος των IDs ώστε να δούμε εάν είναι όσα τα πολύγωνα και μοναδικά.
-  #' Κάθε πολύγωνο πρέπει να χαρακτηρίζεται από ένα ID μοναδικό. το ID κάθε πολυγώνου είναι η "ταυτότητά" του. Στο
-  #' συγκεκριμένο παράδειγμα τα IDs πρέπει να είναι από 1:5(όσο το πλήθος των πολυγώνων)
+  #' Checking the IDs of our polygons. Every ID must be unique and the lenght of IDs must be the same with the length of
+  #' our polygons. The ID is the idendity of every polygon.
   IDs <- sapply(buffers, function(x)slot(slot(x, "polygons")[[1]], "ID"))
   length(unique(IDs)) == length(buffers)
 
-  #' Δημιουργία SpatialPolygons από τα στοιχεία της λίστας. Καταχώρηση των unique IDs για κάθε ένα από τα
-  #' πολύγωνα της λίστας που έχει δημιουργηθεί. Η δομή που δημιουργείται έχει όλα τα ομόκεντρα κυκλικά πολύ-
-  #' γωνα ενωμένα.
+  #' Create SpatialPolygons from our list. Set unique IDs to polygons.
   spols <- SpatialPolygons(lapply(1:length(buffers), function(i) {
     Pols <- slot(buffers[[i]], "polygons")[[1]]
     slot(Pols, "ID") <- as.character(i)
     Pols
   }))
 
-  #' Δημιουργία συνάρτησης για την εξαγωγή των συντεταγμένων των ομόκεντρων πολυγώνων που έχουν δημιουργηθεί.
+  #' Create function to extract the coordinates of polygons according to the edges.
   getEdges <- function(x) {
     stopifnot(class(x) == "SpatialPolygons")
     lapply(x@polygons, function(y) {
@@ -75,112 +63,98 @@ circle_pattern<-function(zones=seq(0.006,0.03,0.006),toplot=T, toexport=T){
     })
   }
 
-  #' Δημιουργία γραμμής από το πρώτο πολύγωνο. Στόχος είναι για κάθε ένα πολύγωνο που έχει δημιουργηθεί να κρατείται μόνο το περίγραμμα
-  #' του. Αυτό συμβαίνει διότι ο χρήστης δεν χρειάζεται όλα τα πολύγωνα αλλά μόνο τις γραμμές, δηλαδή τους ομόκεντρους
-  #' κύκλους.
+  #' Create line from the the first polygon. Getting only the edges of the polygon in order to create
+  #' a circle.
   initialline = Line(getEdges(buffers[[1]]))
   initiallines = Lines(list(initialline), ID="1")
 
-  #' Δημιουργία λίστας για την αποθήκευση των γραμμών που θα δημιουργηθούν.
+  #' Create an empty list sto store the lines/circles.
   list_of_lines=list()
   list_of_lines[[1]]=initiallines
 
-  #' Δημιουργία δομής επανάληψης για την εξαγωγή των περιγραμμάτων των ομόκεντρων κυκλικών πολυγώνων. Για
-  #' κάθε πολύγωνο κρατούνται τα όρια δηλαδή ένας κύκλος. Κάθε κυκλική γραμμή αποθηκεύεται στη λίστα που έχει
-  #' δημιουργηθεί. Χαρακτηριστικό κάθε γραμμής είναι το μοναδικό id.
+  #' Create a loop to get the edges of every spatial polygon. Store the lines/circles to the list.
   for (i in 2:5){
     my_lines = Line(getEdges(buffers[[i]]))
     my_lines_ids = Lines(list(my_lines), ID=as.character(i))
     list_of_lines[[i]]=my_lines_ids
   }
 
-  #' Δημιουργία SpatialLines από τις γραμμές που είναι αποθηκευμένες στη λίστα.
+  #' Create SpatialLines from the lines of our list.
   splines = SpatialLines(list_of_lines)
 
-  #' Δημιουργία data.frame με τις συντεταγμένες x,y κύκλων.
+  #' Create data.frame with the coordinates of our lines.
   data=as.data.frame(coordinates(my_lines_ids))
   names(data) [1]="x"
   names(data) [2]="y"
-  #View(data)
 
-  #' Δημιουργία SpatialLinesDataFrame. Το SpatialLinesDataFrame χαρακτηρίζεται από τις συντεταγμένες τους
-  #' ομόοκεντρους κύκλους καθώς και από τις συντεταγμένες αυτών.
+  #' Create SpatialLinesDataFrame with concentric circles.
   spcirdf = SpatialLinesDataFrame(splines,data)
   plot(spcirdf)
 
-  #' Εισαγωγή του ψηφιακού μοντέλου εδάφους της περιοχής ενδιαφέροντος και απεικόνιση αυτού.
-  dem=raster("dem_lesvos.tif")
+  #' Loading the DEM and plotting it. DEM is a raster file, so we need the raster package.
+  dem=raster("Data\dem_lesvos.tif")
   plot(dem)
 
-  #' Υπολογισμός μήκους του μοτίβου που δημιουργήθηκε. Το μήκος του μοτίβου είναι σημαντικό στοιχείο για το
-  #' χρήστη διότι σε ένα μεγάλο βαθμό, βάση αυτού θα αποφασίσει τον αριθμό των σημείων παρατήρησης που θα
-  #' δημιουργήσει. Τα σημεία παρατήρησης ορίζουν τις περιοχές όπου η μη επανδρωμένη πλατφόρμα κατά τη διάρκεια
-  #' της πτήσης θα συλλέξει σημαντικές πληροφορίες (φωτογραφίες). Το πλήθος των σημείων εξαρτάται από τον χρήστη,
-  #' όμως όσο περισσότερα είναι τα σημεία τόσο καλύτερα γίνεται η απεικόνιση του μοτίβου και η περαιτέρω ανάλυση.
-  #' Τα σημεία αυτά δημιουργούνται παίρνοντας δείγματα με χωρικές πληροφορίες από το μοτίβο. Ουσιαστικά "τρυπάται"
-  #' κάθε κύκλος στις περιοχές των σημείων και αποθηκευόνται οι συντεταγμένες x,y. Τα σημεία είναι δυνατό να
-  #' δημιουργηθούν είτε συστηματικά (όπως το παράδειγμα) είτε τυχαία στο μήκος των κύκλων.
+  #' Finding the length of the pattern(lines) in order to decide the number of waypoints.Waypoints
+  #' are the points where the UAV will take pictures. The user will decide the number of points according to
+  #' the length of the pattern and his personal will. The points might be regular or random and with the sample
+  #' every point will keep the coordinates x,y of the line. For this example we created 1000 waypoints. Plotting the waypoints.
   length_pattern=gLength(spcirdf)
   waypts_circle=spsample(spcirdf,1000,type ="regular")
   plot(waypts_circle)
 
-  #' Δημιουργία data.frame για τα σημεία παρατήρησης. Το data.frame θα περιέχει για κάθε σημείο την τιμή υψομέτρου
-  #' βάση του ψηφιακού μοντέλου εδάφους.Θα δημιουργηθεί επίσης μία στήλη με την τιμή 0 όπου στη συνέχεια θα
-  #' αποθηκευθούν οι τιμές ύψους πτήσης του κάθε σημείου.
+  #' Creation of data.frame with the values of DEM to every waypoint and zero flight height. We used the "extract" 
+  #' to get the values of DEM at the points.
   data=data.frame((extract(dem,waypts_circle)),z=0)
   names(data) [1] ="dem_values"
 
-  #' Δημιουργία SpatialPointsDataFrame.Το SpatialPointsDataFrame θα περιέχει τις συντεαγμένες των σημείων καθώς
-  #' και τις τιμές υψομέτρου και ύψους πτήσης(μηδενικές).
+  #' Creation of SpatialPointsDataFrame with the coordinates and the values of elevation of every waypoint.
   waypoints_circle=SpatialPointsDataFrame(waypts_circle,data)
 
-  #' Πριν τον ορισμό των τιμών ύψους πτήσης είναι σημαντικό ο χρήστης να γνωρίζει κάποια στατιστικά για τα σημεία
-  #' παρατήρησης. Ειδικότερα, θα υπολογισθούν η ελάχιστη, η μέγιστη και η μέση τιμή υψομέτρου. Το βήμα αυτό είναι
-  #' απαραίτητο διότι ο χρήστης αποκτά ολοκληρωμένη εικόνα για το εύρος των τιμών υψομέτρου και στην πορεία είναι
-  #' πιο εύκολο να αποφασίσει το ύψος στο οποίο θα πετά το UAV.
+  #' Finding the min/max/mean DEM values of our waypoints. Is useful for the user to know those statistics of
+  #' altitude of the waypoints. Statistics will help the user to decide the flight height of the UAV.
   min_height=min(data$dem_values,na.rm = TRUE )
   max_height=max(data$dem_values, na.rm = TRUE)
   mean_height=mean(data$dem_values, na.rm = TRUE)
 
-  #' Το ύψος στο οποίο θα πετά το UAV καθορίζεται από το χρήστη σε σχέση πάντα με το υπάρχον υψόμετρο. Το ύψος
-  #' πτήσης μπορέι είτε να είναι σταθερό σε μία τιμή από την επιφάνεια του εδάφους είτε μπορεί να αυξομειώνει
-  #' ανάλογα με τις τιμές του ψηφιακού μοντέλου εδάφους στα σημεία παρατήρησης και την επιθυμία του χρήστη. Στο
-  #' συγκεκριμένο παράδειγμα το ύψος πτήσης της μη επανδρωμένης δεν είναι σταθερό.
+  #' Setting the flight height of UAV. DEM will help the user to decide the flight height of the UAV. The
+  #' flight height can be standard to all waypoints or different (according to the analysis and the
+  #' user's will).(For this example the flight-height is 40 meters to areas with elevation  <=200m,
+  #' 60 meters to areas with elevation  <=300m and 100 where the elevation  >300m).
   waypoints_circle@data$z <- ifelse(waypoints_circle@data$dem_values<=200, waypoints_circle@data$dem_values+40,ifelse(waypoints_circle@data$dem_values>300,waypoints_circle@data$dem_values+100,waypoints_circle@data$dem_values+60))
 
-  #' Μέσα από την εκτέλεση του μοτίβου στόχος είναι η κάλυψη όσο το δυνατό μεγαλύτερου μέρους της περιοχής
-  #' ενδιαφέροντος. Πρακτικά η κάλυψη μιας περιοχής  μέσα από τη χρήση UAV σηρίζεται σε μεγάλο βαθμό στο εύρος
-  #' κάμερας της μη επανδρωμένης πλατφόρμας. Όσο μεγαλύτερο είναι το εύρος αυτής τόσο πιο εύκολη είναι
-  #' η κάλυψη της περιοχής μελέτης.Για τον υπολογισμό της περιοχής κάλυψης από το μοτίβο θα δημιουργηθεί μία
-  #' χωρική ζώνη. Το μέγεθος της ζώνης πρέπει να είναι τόσο ώστε να καλύπτεται όλη η περιοχή του μοτίβου. Ως
-  #' μέγεθος συνήθως ορίζεται είτε το αρχικό βήμα βάση του οποίου δημιουργήθηκε το οτίβο είτε το μισό του αρχικού
-  #' βήματος. Σημαντικό είναι να μην υπάρχουν ακάλυπτες περιοχές μεταξύ των γραμμών/κύκλων.
+  #' The goal from every use of UAV is to cover the greatest possible area. To calculate the coverage
+  #' of our pattern we need to create a spatial zone (buffer). The buffer will be around our pattern so we need
+  #' to know the distance between our legs an the initial step to decide the size of our zone. Our goal is
+  #' to cover all the area and not having gaps between our legs. To this example the size of the buffer is 0.006 degrees.
   range_cover=gBuffer(spcirdf, width=0.006)
   plot(range_cover)
   plot(spcirdf,add=T)
 
-  #' Ιδιαίτερο ενδιαφέρον έχει ο υπολογισμός της περιοχής κάλυψης του μοτίβου. Είναι σημαντική παράμετρος
-  #' διότι επιθυμία κάθε χρήστη είναι με τη χρήση ενός UAV και την ανάπτυξη ενός μοτίβου να καλύπτει όσο
-  #' το δυνατό μεγαλύτερη περιοχή.
+  #' Another important statistic is the coverage of our pattern. Every user's goal is to cover the greatest possible area,
+  #' so we need to find the area covered by the use of our UAV. In order to plot our area we have to
+  #' rasterize it and plot it in KML through Google Earth. 
   area_coverage=gArea(range_cover)
-
-  #' Απεικόνιση του μοτίβου και της περιοχής σε μορφή KML μέσω του Google Earth. Η απεικόνιση του μοτίβου
-  #' θα γίνει με τη χρήση των σημείων παρατήρησης που δημιουργήθηκαν. Για την περιοχή κάλυψης είναι σημαντικό
-  #' βήμα η μετατροπή αυτής σε raster μορφή.
   r=raster(range_cover)
   cover_raster=rasterize(range_cover,r)
-  proj4string(waypoints_circle) = CRS("+proj=longlat +datum=WGS84 +no_defs")
   proj4string(cover_raster) = CRS("+proj=longlat +datum=WGS84 +no_defs")
-  plotKML(waypoints_circle,colour_scale="#FFFF00", "circle_pattern")
   plotKML(cover_raster)
 
+  #' Plot waypoints in KML through Google Earth. Plotting in KML is an importatnt step because the user
+  #' has the opportunity to see the pattern "in real" and in 3 dimensions. It is useful to plot the coverage
+  #' with the waypoints to see all the area covered by the pattern. With the use of Google Earth we can see the
+  #' variance between flight heights in "real space" . The waypoints are Yellow and the size of them differ 
+  #' depending on the flight height(big flight height->big points).For the areas with no DEM values and no
+  #' flight heights the waypoints are white (Nan).
+  proj4string(waypoints_circle) = CRS("+proj=longlat +datum=WGS84 +no_defs")
+  plotKML(waypoints_circle,colour_scale="#FFFF00", "circle_pattern")
 
-  #' Αποθήκευση του SpatialLinesDataFrame σε shapefile.
+  #' Write the SpatialLinesDataFrame to shapefile.
   writeOGR(spcirdf, "path",layer="concentric", driver="ESRI Shapefile", overwrite_layer = T)
 
 }
 
-#' Κάλεσμα συνάρτησης για την εκτέλεση του μοτίβου
+#' Call the function and set the parameters
 circle_pattern(zones=seq(0.006,0.03,0.006),toplot=T, toexport=T)
 
 
