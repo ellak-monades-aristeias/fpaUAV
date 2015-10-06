@@ -154,8 +154,8 @@ creeping_line_pattern <- function(area, n=10, initial_step=0.03, toplot=T, toexp
 
   #' Setting the flight height of UAV. DEM will help the user to decide the flight height of the UAV. The
   #' flight height can be standard to all waypoints or different (according to the analysis and the
-  #' user's will).(For this example the flight-height is 40 meters to areas with elevation is <=200m,
-  #' 60 meters to areas with elevation is <=600m and 100 where the elevation is >600m).
+  #' user's will).(For this example the flight-height is 40 meters to areas with elevation <=200m,
+  #' 60 meters to areas with elevation <=600m and 100 where the elevation >600m).
   waypoints@data$z <- ifelse(waypoints@data$dem_values<=200, waypoints@data$dem_values+40,ifelse(waypoints@data$dem_values>600,waypoints@data$dem_values+100,waypoints@data$dem_values+60))
 
   #' The goal from every use of UAV is to cover the greatest possible area. To calculate the coverage
