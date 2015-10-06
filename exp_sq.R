@@ -3,85 +3,67 @@
 #' ===
 
 
-#' Ορισμός χώρου εργασίας (directory)
-#setwd("C:/cba_drones")
-
-#' Φόρτωση όλων των βιβλιοθηκών που θα χρειασθούν στον κώδικα
+#' Loading libraries
 library(TurtleGraphics)
 library(maptools)
 library(rgeos)
 library(rgdal)
 library(sp)
 
-#' Ορισμός περιοχής μελέτης μέσα από τη δημιουργία bounding box. Αφού δημιουργηθεί το bounding box
-#' γίνεται αποθήκευση στο directory που ορίσθηκε αρχικά και έπειτα εισάγεται στο Rstudio. Το bounding box είναι σε
-#' μορφή kml ώστε να είναι εύκολη η χρήση του.
+#' Set the area of interest trhough a bounding box. The user has to create a bounding box and save it
+#' at the working directory. For the example the bounding box is in KML.
 area=readOGR("Data\bbox.kml",layer="bbox")
-#plot(area)
+plot(area)
 
-#' πρώτο βήμα είναι ο ορισμός του προβολικού συστήματος. Στη συγκεκριμένη περίπτωση χρησιμοποιείται
-#' το WGS84. Αφού ορισθεί το προβολικό γίνεται απεικονίζεται η περιοχή μελέτης. Ο ορισμός του προβολικού συστήματος
-#' δεν είναι αναγκαίος σε περιπτώσεις που τα αρχεία είναι της μορφής kml, όμως ο εκάστοτε χρήστης θα πρέπει
-#' θα πρέπει ανάλογα με τη μορφή των αρχείων του να ορίζει το σύστημα στο οποίο θα πραγματοποιηθεί η ανάλυσή του.
+#' At first the user has to set the coordinate system of the file(files). For the example it's not necessary
+#' because the file is in KML. Nevertheless the coordinate system is very important.
 proj4string(area) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 
-
+#' Create functions to open links. Through links users can see the characteristics of the pattern and get
+#' the Digital Elevation Model. Users must select the appropriate DEM and save it (to directory).
 pattern_expanding_info <- function(){
-  #' Ένα σημαντικό βήμα προτού ξεκινήσει η ανάλυση είναι η γνωρισμία με το εκάστοτε μοτίβο και η κατανόηση των
-  #' χαρακτηριστικών του. Για αυτό το λόγο, γίνεται η χρήση urls μέσα από την R.
   browseURL("http://www.navdynamic.com.au/p_navigator-search-rescue-square.html")
-
 }
 
 get_your_dem <- function(){
-  #' Επιλογή και αποθήκευση του ψηφιακού μοντέλου εδάφους για την περιοχή μελέτης. Ακολουθώντας τον
-  #' παρακάτω σύνδεσμο ο εκάστοτε χρήστης μπορεί να βρει και να κατεβάσει το ψηφιακό μοντέλο για την
-  #' περιοχή μελέτης του.
   browseURL("http://srtm.csi.cgiar.org/SELECTION/inputCoord.asp")
 }
 
 
-
+#' Create function for Expanding Square pattern
 pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=T ){
 
-  #' Για την εκτέλεση του συγκεκριμένου μοτίβου (όπως φαίνεται και από το σχήμα του),η εκάστοτε μη επανδρωμένη
-  #' πλατφόρμα θα ξεκινάει την πτήση από το κέντρο της περιοχής μελέτης που έχει ορίσει ο χρήστης. Για αυτό
-  #' το λόγο δημιουργείται το κεντροειδές του bounding box της περιοχής μελέτης. Και για αυτό το σημείο
-  #' ορίζεται το ίδιο προβολικό σύστημα ενώ γίνεται απεικόνιση αυτού σε συνδυασμό με το bounding box.
+
+  #' For this pattern (as seen from the link), the Unmanned Aerial Vehicle will start the flightpath from
+  #' the center of the area, set by the user. The user creates the centroid of the bounding box and sets the
+  #' coordinate system.
   pointcenter = gCentroid(area,byid=FALSE)
   proj4string(pointcenter) = CRS("+proj=longlat +datum=WGS84 +no_defs")
   plot(pointcenter)
   plot(area,add=T)
 
-  #' Oρισμός των συντεταγμένων του κεντροειδούς (του σημείου έναρξης)
+  #' Set the coordinates of the centroid.
   x_first=26.32701
   y_first=39.14581
 
-  #' δημιουργία κενής λίστας όπου σε επόμενο στάδιο θα αποθηκευθούν τα ευθύγραμμα τμήματα που θα ακολουθήσει
-  #' το uav (τα legs). Σε αυτή την περίπτωση ο αριθμός των legs που επιλέχθηκαν να δημιουργηθούν είναι n=10.
-  #' Χαρακτηριστικό του μοτίβου είναι πως το μήκος των legs αυξάνει ανά δύο. Το αρχικό μήκος ορίζεται στις
-  #' 0.03 μοίρες.
+  #' Creation of an empty list. The list will have the coordinates of nodes of the legs of the pattern. The number and the 
+  #' length of legs defined by the user. The length increases by two legs according to the initial step. For this example the
+  #' UAV will create 10 legs with 0.03 (degrees)step.
   leg_list = list()
-  #n=10
-  #initial_step=0.03
 
-  #' Χρήση του πακέτου TurtleGraphics για την εκτέλεση του μοτίβου.Ορισμός των διαστάσεων του bounding box
-  #' όπου θα κινηθεί το turtle. σε περιπτώσεις όπου το μοτίβο ξεπερνά τα όρια του bounding box,θα περιορίζεται
-  #' (θα κόβεται) αυτόματα στα όρια αυτού.Εγκατάσταση του turtle στο σημείο έναρξης βάση συντεταγμένων.
+  #' For this pattern we need the TurtleGraphics package. We set the dimensions of the bounding box in which
+  #' the turtle has to move. Setting the turtle to the starting point(centroid). In case the pattern is bigger
+  #' than the bounding box with the mode we can set the "clip"  which automatically "cuts" the pattern according to
+  #' the bounding box.
   turtle_init(width=0.173,height=0.211, mode = c("clip"))
   turtle_setpos(x_first,y_first)
 
-  #' Για τη δημιουργία των legs αρχικά γίνεται έλεγχος για να βρεθεί το leg στο οποίο βρίσκεται το UAV.
-  #' Εάν βρίσκεται στο πρώτο τότε ως αρχή ορίζεται το σημείο με συντεταγμένες αυτές του κεντροειδούς και
-  #' μήκος το αρχικό step(0.03 μοίρες). Σε κάθε άλλη περίπτωση ως αρχικό σημείο του leg ορίζεται το τελικό
-  #' σημείο του προηγούμενου. Επίσης γίνεται έλεγχος ώστε ανά δύο legs να γίνεται αύξηση του βήματος βάση
-  #' του αρχικού. Ουσιαστικά το βήμα ανά δύο legs θα διπλασιάζεται. Η πορεία που θα ακολουθεί
-  #' το turtle στη συγκεκριμένη περίπτωση είναι σταθερή. Θα προχωρά ευθεία ανάλογα με το μήκος των legs και
-  #' όλες οι στροφές που θα πραγματοποιεί θα είναι δεξιόστροφες των 90 μοιρών. Όλες οι συντεταγμένες των
-  #' αρχικών και τελικών σημείων των legs θα κρατώνται και θα αποθηκεύονται στη λίστα που έχει δημιουργηθεί
-  #' σε προηγούμενο στάδιο. Με τη δημιουργία των legs, γίνεται unlist της λίστας που αποθηκεύθηκαν οι
-  #' συντεταγμένες και βάση του εύρους γίνεται η απεικόνιση του μοτίβου. Ορίζονται τα στοιχεία των αξόνων
-  #' καθώς και των legs(μέγεθος,χρώματα).
+  #' For the creation of legs we need to know the posistion of the UAV.For the first leg the start point is
+  #' the centroid of the area. The start point of the other legs are the end point of the previous leg . Every two
+  #' legs there is checking in order to increase the length according to the initial step. The UAV will fly
+  #' straight the length and then will turn 90 degrees. The coordinates of start and end points will
+  #' be stored in the list. With the end of the pattern we need to unlist the list in order to get the coordinates
+  #' and store the legs.
   for (i in 1:n){
 
     if (i ==1){
@@ -92,11 +74,6 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
       x_start = x_end
       y_start = y_end
     }
-
-    #' Έλεγχος για να δούμε σε ποιο leg βρίσκεται η επανδρωμένη πλατφόρμα. Ο έλεγχος γίνεται ώστε να αυξάνει το μήκος
-    #' των legs κάθε δύο. η αύξηση αυτή δεν είναι αυθαίρετη αλλά βασίζεται στη μορφή του συγκεκριμένου μοτίβου. Η αύξηση
-    #' του μήκους ανά δύο legs σχετίζεται με το αρχικό βήμα που ορίζει ο χρήστης. Ουσιατικά ανά δύο ευθύγραμμα τμήματα το
-    #' μήκος αυξάνει κατά το αρχικό βήμα.
     if(i%%2 == 1){
       step =   step + 0.03
     }
@@ -110,9 +87,8 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   }
 
 
-  #' Σύμφωνα με το εύρος των τιμών των συντεταγμένων των legs, γίνεται unlist της λίσταςμε σκοπό τη μετέπειτα
-  #' δημιουργία γραμμών του μοτίβου. Ορισμός χαρακτηριστικών των αξόνων x-y καθώς και των σημείων γραμμών που θα
-  #' αναπαρασταθούν.
+
+  #' According to the range of the coordinates we unlist the list to store our legs/lines.
   range_exp = range(unlist(leg_list))
 
   for (k in 1:n){
@@ -121,21 +97,21 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   }
 
 
-  #' Δημιουργία data.frame με τις συντεταγμένες των legs. Ορισμός στηλών και labels αυτών.
+  #' Create a data.frame with the coordinates of legs. Setting the labels of columns.
   linesdf = data.frame(matrix(unlist(leg_list), ncol=4, byrow=T))
   names(linesdf)=c("y_from", "x_from", "y_to", "x_to")
 
-  #' Δημιουργία γραμμών των legs μέσα από το data.frame που δημιουργήθηκε.
+  #' Cteate lines/legs from the data.frame.
   lines = vector("list", nrow(linesdf))
   for (i in seq_along(lines)) {
     lines[[i]] <- Lines(list(Line(rbind(c(linesdf$x_from[i],linesdf$y_from[i]),  c(linesdf$x_to[i], linesdf$y_to[i]) ))), as.character(i))
   }
 
-  #' Μετατροπή των γρμμών που δημιουργήθηκαν σε simple SpatialLines
+  #' Create simple SpatialLines from the lines
   splines = SpatialLines(lines)
   proj4string(splines) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 
-  #' Μετατροπή από simple SpatialLines σε SpatialLinesDataFrame
+  #' Create SpatialLinesDataFrame from simple SpatialLines
   splinesdf = SpatialLinesDataFrame(splines,linesdf)
   proj4string(splinesdf) = CRS("+proj=longlat +datum=WGS84 +no_defs")
 
@@ -143,86 +119,70 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
     plot(splinesdf)
   }
 
-
-  #' εισαγωγή του ψηφιακού μοντέλου εδάφους στο RStudio και απεικόνιση αυτού. Το αρχείο βρίσκεται σε
-  #' μορφή raster οπότε θα γίνει χρήση του αντίστοιχου πακέτου.
-  dem=raster("dem_lesvos.tif")
+  #' Loading the DEM and plotting it. DEM is a raster file, so we need the raster package.
+  dem=raster("Data\dem_lesvos.tif")
   plot(dem)
 
-  #' Υπολογισμός του μήκους του μοτίβου (γραμμών) ώστε ο χρήστης να μπορέσει στη συνέχεια να αποφασίσει το πλήθος
-  #' των σημείων που θα ορίσει. Τα σημεία για ένα καλύτερο αποτέλεσμα θα πρέπει να είναι regular. Αυτό σημαίνει
-  #' πως θα υπάρχει ένα σταθερό βήμα(π.χ κάθε 1 μέτρο). Στο συγκεκιρμένο παράδειγμα δημιουργήθηκαν 200 σημεία. Tα σημεία
-  #' δημιουργούνται με τη μέθοδο sample όπου κάθε σημείο "τρυπάει" τις γραμμές και παίρνει τις συντεταγμένες.
+  #' Finding the length of the pattern(lines) in order to decide the number of waypoints.Waypoints
+  #' are the points where the UAV will take pictures. The user will decide the number of points according to
+  #' the length of the pattern and his personal will. The points might be regular or random and with the sample
+  #' every point will keep the coordinates x,y of the line. For this example we created 200 waypoints.
+  #' (the more points the better the result)
   length_pattern=gLength(splinesdf)
   waypts_creep=spsample(splinesdf,200,type ="regular")
 
-  #' Δημιουργία data.frame με τις τιμές του υψομέτρου για κάθε ένα από τα σημεία και με μηδενικό ύψος πτήσης z.Οι τιμές
-  #' του υψομέτρου προέκυψαν από την εντολή extract. Με την εντολή αυτή ουσιαστικά κάθε σημείο τρυπά το ψηφιακό
-  #' μοντέλο εδάφους και παίρνει τις τιμές του.
+  #' Creation of data.frame with the values of DEM to every waypoint and zero flight height. We used the "extract"
+  #' to get the values of DEM at the points.
   data=data.frame((extract(dem,waypts_creep)),z=0)
   names(data) [1] ="dem_values"
 
-  #' Δημιουργία SpatialPointsDataFrame
+  #' Creation of SpatialPointsDataFrame
   waypoints_creep=SpatialPointsDataFrame(waypts_creep,data)
 
-  #' Υπολογισμών στατιστικών υψομέτρου για τα σημεία που δημιουργήθηκαν. Ο χρήστης είναι χρήσιμο να γνωρίζει
-  #' τη μέγιστη, την ελάχιστη και τη μέση τιμή του υψομέτρου στην περιοχή μελέτης για κάθε ένα από τα σημεία
-  #' του διότι βάση αυτών των τιμών θα αποφασίσει ουσιαστικά τις τιμές του ύψους πτήσης της μη επανδρωμένης
-  #' πλατφόρμας.
+  #' Finding the min/max/mean DEM values of our waypoints. Is useful for the user to know those statistics of
+  #' altitude of the waypoints. Statistics help the user to decide the flight height of the UAV.
   min_height=min(data$dem_values,na.rm = TRUE )
   max_height=max(data$dem_values, na.rm = TRUE)
   mean_height=mean(data$dem_values, na.rm = TRUE)
 
-  #' Ορισμός των τιμών ύψους πτήσης της μη επανδρωμένης πλατφόρμας. Το ύψος το αποφασίζει ο χρήστης ανάλογα
-  #' πάντα με το ψηφιακό μοντέλο εδάφους της περιοχής ενδιαφέροντος. Το UAV μπορεί είτε να εκτελεί πτήση σε ένα
-  #' σταθερό ύψος πάνω από την επιφάνεια του εδάφους είτε αλλάζει το ύψος πτήσης. Στο συγκεκριμένο παράδειγμα
-  #' επιλέχθηκε η εναλλαγή υψομέτρου.
+  #' Setting the flight height of UAV. DEM will help the user to decide the flight height of the UAV. The
+  #' flight height can be standard to all waypoints or different (according to the analysis and the
+  #' user's will).(For this example the flight-height is 40 meters to areas with elevation <=200m,
+  #' 60 meters to areas with elevation <=600m and 100 where the elevation >600m).
   waypoints_creep@data$z <- ifelse(waypoints_creep@data$dem_values<=200, waypoints_creep@data$dem_values+40,ifelse(waypoints_creep@data$dem_values>600,waypoints_creep@data$dem_values+100,waypoints_creep@data$dem_values+60))
 
-  #' Κατά τη διάρκεια πτήσης της μη επανδρωμένης πλατφόρμας στόχος είναι η κάλυψης όσο το δυνατό μεγαλύτερου
-  #' μέρους από την περιοχή μελέτης.Για να υπολογισθεί η συνολική κάλυψη της περιοχής από την πτήση θα δημιουργη-
-  #' θεί μία χωρική ζώνη. Η ζώνη αυτή θα αποτυπώνει όλο το χώρο που θα βρίσκεται εντός του εύρους κάλυψης
-  #' του UAV εν ώρα πτήσης. Για τη δημιουργία της ζώνης σημαντικό είναι ο χρήστης να υπολογίσει την απόσταση
-  #' μεταξύ των legs. Στο συγκεκριμένο παράδειγμα το αρχικό βήμα έχει ορισθεί τις 0.03 μοίρες. Εφόσον το μέγεθος
-  #' των legs για αυτό το μοτίβο, ανά δύο αυξάνει για να μην υπάρχουν κενά στην περιοχή κάλυψης που θα προκύψει,
-  #' το μέγεθος της ζώνης ορίσθηκε στις 0.03 μοίρες, όσο το αρχικό βήμα.
-  range_cover=gBuffer(splinesdf, width=0.03)
+  #' The goal from every use of UAV is to cover the greatest possible area. To calculate the coverage
+  #' of our pattern we need to create a spatial zone (buffer). The buffer will be around our pattern so we need
+  #' to know the distance between our legs an the initial step to decide the size of our zone. Our goal is
+  #' to cover all the area and not having gaps between our legs. To this example the size of the buffer is the
+  #' initial step (0.03 degrees).
   plot(range_cover)
   plot(splinesdf,add=T)
 
-  #' Έχοντας ολοκληρωθεί η διαδικασία δημιουργίας της χωρικής ζώνης/ ζώνης κάλυψης, ιδιαίτερο ενδιαφέρον
-  #' έχει ο υπολογισμός της συνολικής έκτασης κάλυψης. Η συνολική έκταση που καλύπτεται κατά τη διαδικασία
-  #' πτήσης ενός UAV είναι το σημαντικότερο στοιχείο που ενδιαφέρει τον χρήστη και στο οποίο θα στηριχθέι η
-  #' περαιτέρω ανάλυσή του. Για να απεικονισθεί η περιοχή κάλυψης μέσω του Google Earth έγινε η μετατροπή της
-  #' σε μορφή raster.
+  #' Another important statistic is the coverage of our pattern. Every user's goal is to cover the greatest possible area,
+  #' so we need to find the area covered by the use of our UAV. In order to plot our area we have to
+  #' rasterize it and plot it in KML through Google Earth.
   area_coverage=gArea(range_cover)
   r=raster(range_cover)
   cover_raster=rasterize(range_cover,r)
   plotKML(cover_raster)
 
-  #' Απεικόνιση σε KML μέσω του Google Earth. Το στάδιο της απεικόνισης του μοτίβου είναι ιδαίτερα σημαντικό
-  #' αφού δίνεται στο χρήστη η ευκαιρία να δει το μοτίβο που δημιουργήθηκε στο χώρο, να μελετήσει τα χαρακτη-
-  #' ριστικά του όπως η διακύμανση του ύψους πτήσης και να απεικονίσει τό αποτέλεσμα της ανάλυσής του. Χρήσιμη
-  #' είναι και η απεικόνιση της περιοχής κάλυψης ταυτόχρονα ώστε παράλλημε με το μοτίβο να φαίνεται και η περιοχή
-  #' που θα καλυφθεί σε περίπτωση πτήσης. Τα σημεία που απεικονίζονται χρησιμοποιούνται τόσο για απλή απεικόνιση
-  #' του μοτίβου, όσο και για τον ορισμό των περιοχών όπου το UAV θα τραβήξει φωτογραφίες.
+  #' Plot waypoints in KML through Google Earth. Plotting in KML is an importatnt step because the user
+  #' has the opportunity to see the pattern "in real" and in 3 dimensions. It is useful to plot the coverage
+  #' with the waypoints to see all the area covered by the pattern. With the use of Google Earth we can see the
+  #' variance between flight heights in "real space" . The waypoints are Yellow and the size of them differ 
+  #' depending on the flight height(big flight height->big points).For the areas with no DEM values and no
+  #' flight heights the waypoints are white (Nan).
   plotKML(waypoints_creep,colour_scale="#FFFF00", "expanding_square")
-
-
-  #' Αποθήκευση του SpatialLinesDataFrame σε shapefile.
+  
+  #' Write the SpatialLinesDataFrame to shapefile.
   if (toexport){
     writeOGR(splinesdf, "path",layer="expanding square", driver="ESRI Shapefile", overwrite_layer = T)
   }
 
+}
 
-
-} # End of function "pattern_expanding"
-
-
-
-
-
-# Testing
+# Call the function and set the parameters
 pattern_expanding(area, n=10, initial_step=0.03, toplot=T, toexport=T )
 
 
