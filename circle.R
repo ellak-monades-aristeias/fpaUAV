@@ -1,5 +1,10 @@
 #' Circle pattern
 #' ===
+#' 
+#' Author:
+#' Date:
+#' Organization: 
+#' Description: 
 
 
 #' Loading libraries

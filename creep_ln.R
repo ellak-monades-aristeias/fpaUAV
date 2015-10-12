@@ -1,5 +1,10 @@
 #' Creeping Line  pattern
 #' ===
+#' 
+#' Author:
+#' Date:
+#' Organization: 
+#' Description: 
 
 #' Loading libraries
 library(TurtleGraphics)
