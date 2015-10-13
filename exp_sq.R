@@ -1,12 +1,11 @@
 
 #' Expanding Square pattern
 #' ===
-#' 
-#' Author:
-#' Date:
-#' Organization: 
-#' Description: 
-
+#'
+#' Author: Kavroudakis Dimitris, Bika Konstantina
+#' Date:12/10/2015
+#' Organization: University of the Aegean, Department of Geography, Lesvos
+#' Description: Flight-path Analysis for Unmanned Aerial Vehicles (UAVs)
 
 #' Loading libraries
 library(TurtleGraphics)
@@ -51,7 +50,7 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   x_first=26.32701
   y_first=39.14581
 
-  #' Creation of an empty list. The list will have the coordinates of nodes of the legs of the pattern. The number and the 
+  #' Creation of an empty list. The list will have the coordinates of nodes of the legs of the pattern. The number and the
   #' length of legs defined by the user. The length increases by two legs according to the initial step. For this example the
   #' UAV will create 10 legs with 0.03 (degrees)step.
   leg_list = list()
@@ -128,12 +127,10 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   dem=raster("Data\dem_lesvos.tif")
   plot(dem)
 
-  #' Finding the length of the pattern(lines) in order to decide the number of waypoints.Waypoints
-  #' are the points where the UAV will take pictures. The user will decide the number of points according to
+  #' Waypoints are the points where the UAV will take pictures. The user will decide the number of points according to
   #' the length of the pattern and his personal will. The points might be regular or random and with the sample
   #' every point will keep the coordinates x,y of the line. For this example we created 200 waypoints.
   #' (the more points the better the result)
-  length_pattern=gLength(splinesdf)
   waypts_creep=spsample(splinesdf,200,type ="regular")
 
   #' Creation of data.frame with the values of DEM to every waypoint and zero flight height. We used the "extract"
@@ -143,12 +140,6 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
 
   #' Creation of SpatialPointsDataFrame
   waypoints_creep=SpatialPointsDataFrame(waypts_creep,data)
-
-  #' Finding the min/max/mean DEM values of our waypoints. Is useful for the user to know those statistics of
-  #' altitude of the waypoints. Statistics help the user to decide the flight height of the UAV.
-  min_height=min(data$dem_values,na.rm = TRUE )
-  max_height=max(data$dem_values, na.rm = TRUE)
-  mean_height=mean(data$dem_values, na.rm = TRUE)
 
   #' Setting the flight height of UAV. DEM will help the user to decide the flight height of the UAV. The
   #' flight height can be standard to all waypoints or different (according to the analysis and the
@@ -161,28 +152,28 @@ pattern_expanding <- function(area, n=10, initial_step=0.03, toplot=T, toexport=
   #' to know the distance between our legs an the initial step to decide the size of our zone. Our goal is
   #' to cover all the area and not having gaps between our legs. To this example the size of the buffer is the
   #' initial step (0.03 degrees).
-  plot(range_cover)
+  range_cover_creep=gBuffer(splinesdf, width=0.03)
+  plot(range_cover_creep)
   plot(splinesdf,add=T)
 
-  #' Another important statistic is the coverage of our pattern. Every user's goal is to cover the greatest possible area,
-  #' so we need to find the area covered by the use of our UAV. In order to plot our area we have to
-  #' rasterize it and plot it in KML through Google Earth.
-  area_coverage=gArea(range_cover)
-  r=raster(range_cover)
-  cover_raster=rasterize(range_cover,r)
+  #'  In order to plot our area we have to rasterize it and plot it in KML through Google Earth.
+  r=raster(range_cover_creep)
+  cover_raster=rasterize(range_cover_creep,r)
   plotKML(cover_raster)
 
   #' Plot waypoints in KML through Google Earth. Plotting in KML is an importatnt step because the user
   #' has the opportunity to see the pattern "in real" and in 3 dimensions. It is useful to plot the coverage
   #' with the waypoints to see all the area covered by the pattern. With the use of Google Earth we can see the
-  #' variance between flight heights in "real space" . The waypoints are Yellow and the size of them differ 
+  #' variance between flight heights in "real space" . The waypoints are Yellow and the size of them differ
   #' depending on the flight height(big flight height->big points).For the areas with no DEM values and no
   #' flight heights the waypoints are white (Nan).
   plotKML(waypoints_creep,colour_scale="#FFFF00", "expanding_square")
-  
-  #' Write the SpatialLinesDataFrame to shapefile.
+
+  #' Write to shapefile.
   if (toexport){
     writeOGR(splinesdf, "path",layer="expanding square", driver="ESRI Shapefile", overwrite_layer = T)
+    writeOGR(waypoints_creep, "path",layer="waypts_expanding", driver="ESRI Shapefile", overwrite_layer = T)
+
   }
 
 }
