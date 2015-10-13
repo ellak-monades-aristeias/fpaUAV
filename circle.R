@@ -1,10 +1,10 @@
 #' Circle pattern
 #' ===
-#' 
-#' Author:
-#' Date:
-#' Organization: 
-#' Description: 
+#'
+#' Author: Kavroudakis Dimitris, Bika Konstantina
+#' Date:12/10/2015
+#' Organization: University of the Aegean, Department of Geography, Lesvos
+#' Description: Flight-path Analysis for Unmanned Aerial Vehicles (UAVs)
 
 
 #' Loading libraries
@@ -100,27 +100,19 @@ circle_pattern<-function(zones=seq(0.006,0.03,0.006),toplot=T, toexport=T){
   dem=raster("Data\dem_lesvos.tif")
   plot(dem)
 
-  #' Finding the length of the pattern(lines) in order to decide the number of waypoints.Waypoints
-  #' are the points where the UAV will take pictures. The user will decide the number of points according to
+  #' Waypoints are the points where the UAV will take pictures. The user will decide the number of points according to
   #' the length of the pattern and his personal will. The points might be regular or random and with the sample
   #' every point will keep the coordinates x,y of the line. For this example we created 1000 waypoints. Plotting the waypoints.
-  length_pattern=gLength(spcirdf)
   waypts_circle=spsample(spcirdf,1000,type ="regular")
   plot(waypts_circle)
 
-  #' Creation of data.frame with the values of DEM to every waypoint and zero flight height. We used the "extract" 
+  #' Creation of data.frame with the values of DEM to every waypoint and zero flight height. We used the "extract"
   #' to get the values of DEM at the points.
   data=data.frame((extract(dem,waypts_circle)),z=0)
   names(data) [1] ="dem_values"
 
   #' Creation of SpatialPointsDataFrame with the coordinates and the values of elevation of every waypoint.
   waypoints_circle=SpatialPointsDataFrame(waypts_circle,data)
-
-  #' Finding the min/max/mean DEM values of our waypoints. Is useful for the user to know those statistics of
-  #' altitude of the waypoints. Statistics will help the user to decide the flight height of the UAV.
-  min_height=min(data$dem_values,na.rm = TRUE )
-  max_height=max(data$dem_values, na.rm = TRUE)
-  mean_height=mean(data$dem_values, na.rm = TRUE)
 
   #' Setting the flight height of UAV. DEM will help the user to decide the flight height of the UAV. The
   #' flight height can be standard to all waypoints or different (according to the analysis and the
@@ -136,10 +128,8 @@ circle_pattern<-function(zones=seq(0.006,0.03,0.006),toplot=T, toexport=T){
   plot(range_cover)
   plot(spcirdf,add=T)
 
-  #' Another important statistic is the coverage of our pattern. Every user's goal is to cover the greatest possible area,
-  #' so we need to find the area covered by the use of our UAV. In order to plot our area we have to
-  #' rasterize it and plot it in KML through Google Earth. 
-  area_coverage=gArea(range_cover)
+  #' In order to plot our area we have to
+  #' rasterize it and plot it in KML through Google Earth.
   r=raster(range_cover)
   cover_raster=rasterize(range_cover,r)
   proj4string(cover_raster) = CRS("+proj=longlat +datum=WGS84 +no_defs")
@@ -148,15 +138,15 @@ circle_pattern<-function(zones=seq(0.006,0.03,0.006),toplot=T, toexport=T){
   #' Plot waypoints in KML through Google Earth. Plotting in KML is an importatnt step because the user
   #' has the opportunity to see the pattern "in real" and in 3 dimensions. It is useful to plot the coverage
   #' with the waypoints to see all the area covered by the pattern. With the use of Google Earth we can see the
-  #' variance between flight heights in "real space" . The waypoints are Yellow and the size of them differ 
+  #' variance between flight heights in "real space" . The waypoints are Yellow and the size of them differ
   #' depending on the flight height(big flight height->big points).For the areas with no DEM values and no
   #' flight heights the waypoints are white (Nan).
   proj4string(waypoints_circle) = CRS("+proj=longlat +datum=WGS84 +no_defs")
   plotKML(waypoints_circle,colour_scale="#FFFF00", "circle_pattern")
 
-  #' Write the SpatialLinesDataFrame to shapefile.
-  writeOGR(spcirdf, "path",layer="concentric", driver="ESRI Shapefile", overwrite_layer = T)
-
+  #' Write to shapefile.
+  writeOGR(spcirdf, "path",layer="circle", driver="ESRI Shapefile", overwrite_layer = T)
+  writeOGR(waypoints_circle, "path",layer="waypts_circle", driver="ESRI Shapefile", overwrite_layer = T)
 }
 
 #' Call the function and set the parameters
