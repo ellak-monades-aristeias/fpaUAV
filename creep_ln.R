@@ -1,10 +1,12 @@
 #' Creeping Line  pattern
 #' ===
 #'
-#' Author: Kavroudakis Dimitris,Bika Konstantina
+#' Authors:
+#' Bika Konstantina,postgraduate student at University of the Aegean
+#' Kavroudakis Dimitris, Assistant Professor at University of the Aegean
 #' Date:12/10/2015
-#' Organization:University of the Aegean, Department of Geography, Lesvos
-#' Description:Flight-path Analysis for Unmanned Aerial Vehicles (UAVs)
+#' Organization: University of the Aegean, Department of Geography, Lesvos
+#' Description: Flight-path Analysis for Unmanned Aerial Vehicles (UAVs)
 
 #' Loading libraries
 library(TurtleGraphics)
